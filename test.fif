@@ -1,20 +1,64 @@
 "TonUtil.fif" include
 "Asm.fif" include
 
+// str -- method_id
 { <b swap $, b> <s dup sbits 8 / B@ drop crc16 0xffff and 0x10000 or } : method_id
 
-// <b 1 32 u, 1 16 i, 44 256 u, "zevlg" $, 0 8 u, b> <s
-// -1
-<b 1 16 i, "zevlg" $, 0 8 u, b> <s
+// args method_id -- results
+{
+    "mtdns.fif" include <s
+    "test_dict" file>B B>boc
+    runvm
+    ."current data:" dup <s csr. cr
+    boc>B "test_dict" B>file
+    drop
+} : run_method
+
+
+<b null dict, b> boc>B  "test_dict" B>file
+
+
+// add domains
+
+<b 1 32 u, 1 16 i, 44 256 u, "zevlg" $, b> <s
+-1
+run_method
+."stk" cr .s cr
+
+<b 1 32 u, 1 16 i, 11 256 u, "stas" $, b> <s
+-1
+run_method
+."stk" cr .s cr
+
+<b 1 32 u, 1 16 i, 111234 256 u, "yandex" $, b> <s
+-1
+run_method
+."stk" cr .s cr
+
+// resolve domains
+
+1 <b "yandex" $, b> <s
 "dnsresolve" method_id
+run_method
+."stk" cr .s cr
+drop drop
 
-"mtdns.fif" include <s
-// <b 0 1 u, b> // data
-"test_dict" file>B B>boc
 
-runvm .s
+1 <b "stas" $, b> <s
+"dnsresolve" method_id
+run_method
+."stk" cr .s cr
+drop drop
 
-dup <s csr. cr
+1 <b "zevlg" $, b> <s
+"dnsresolve" method_id
+run_method
+."stk" cr .s cr
+drop drop
 
-boc>B "test_dict" B>file 
 
+1 <b "jack" $, b> <s
+"dnsresolve" method_id
+run_method
+."stk" cr .s cr
+drop drop
