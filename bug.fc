@@ -1,0 +1,21 @@
+_ test_varkeydict() method_id {
+  var s1 = begin_parse(begin_cell()
+    .store_uint(1, 32)
+    .store_uint(1, 32)
+    .store_uint(1, 32)
+    .store_uint(1, 32)
+    .store_uint(1, 32)
+    .end_cell());
+  var s2 = begin_parse(begin_cell()
+    .store_uint(1, 32)
+    .store_uint(1, 32)
+    .store_uint(2, 32)
+    .store_uint(2, 32)
+    .store_uint(2, 32)
+    .end_cell());
+
+  var records = new_dict();
+  records~dict_set_builder(slice_bits(s1), s1, begin_cell().store_uint(65432, 32));
+  records~dict_set_builder(slice_bits(s2), s2, begin_cell().store_uint(65432, 32));
+  return records;
+}

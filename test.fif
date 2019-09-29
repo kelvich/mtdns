@@ -1,0 +1,21 @@
+"TonUtil.fif" include
+"Asm.fif" include
+
+<b "зуцзуц" $, 0 8 u, b> <s // arg
+// "зуц-зуц"
+
+// <{ DEC }>s // recv_internal
+<{ DROP 128517 PUSHINT }>s
+"mtdns.fif" include <s
+|_
+
+
+// <b 0 1 u, b> // data
+"test_dict" file>B B>boc
+
+runvm .s
+
+dup <s csr. cr
+
+boc>B "test_dict" B>file 
+

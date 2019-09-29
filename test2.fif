@@ -1,0 +1,21 @@
+"TonUtil.fif" include
+"Asm.fif" include
+
+GR$2
+GR$0
+"message"
+// <b 0 1 u, b> // data
+<b x{C_} x{A0000000591948F779} |_ s, b>
+
+<b "12345" $, 0 8 u, b> <s
+
+<{ DROP 128517 INT }>s // resolve
+"mtdns.fif" include <s
+|_
+
+<b x{C_} x{A0000000591948F779} |_ s, b>
+
+.s
+runvm .s
+
+// dup <s csr. cr
