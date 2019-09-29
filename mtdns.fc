@@ -10,20 +10,14 @@ builder store_zeroes(builder b, int len) asm "STZEROES";
 
 ;; helpers
 
-slice rpad(in_slice) {
-  var str = begin_cell();
-  var b = -1;
-  var len = 0;
-
-  while (b = in_slice~load_uint(8)) {
-    len = len + 1;
-    str = str.store_uint(b, 8);
-  }
-  str = str.store_zeroes( (32 - len) * 8 );
-
-  return str.end_cell().begin_parse();
+;; workaround for variable keylen dict bugs
+slice rpad(slice str) {
+  return begin_cell()
+    .store_slice(str)
+    .store_zeroes( 32 * 8 - slice_bits(str) )
+    .end_cell()
+    .begin_parse();
 }
-
 
 ;; Manual Ton DNS
 
@@ -56,24 +50,26 @@ slice rpad(in_slice) {
 
 ;; Get methods
 
-(int, cell) dnsresolve(slice req) method_id {
-  var cat_id = req~load_int(16);
-  var str_slc = rpad(req);
+(int, cell) dnsresolve(int cat_id, slice in_req) method_id {
 
   var cs = get_data().begin_parse();
   var records = cs~load_dict();
   cs.end_parse();
 
-  var (cat_slice, found) = records.dict_get?(slice_bits(str_slc), str_slc);
+  var req = rpad(in_req);
+
+  var (cat_slice, found) = records.dict_get?(slice_bits(req), req);
   if (found) {
     var record_cats = cat_slice~load_dict();
     var (rec, cat_found) = record_cats.idict_get?(16, cat_id);
     if (cat_found) {
-      return (slice_bits(str_slc), begin_cell().store_uint(rec~load_uint(256), 256).end_cell());
+      var res = rec~load_uint(256);
+      return (res, begin_cell().store_uint(res, 256).end_cell());
     }
+  } else {
+    ;; workaroung for noreturn marking bug
+    return (0, begin_cell().end_cell());
   }
 
   return (0, begin_cell().end_cell());
 }
-
-
