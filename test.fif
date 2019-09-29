@@ -1,15 +1,14 @@
 "TonUtil.fif" include
 "Asm.fif" include
 
-<b "зуцзуц" $, 0 8 u, b> <s // arg
-// "зуц-зуц"
+{ <b swap $, b> <s dup sbits 8 / B@ drop crc16 0xffff and 0x10000 or } : method_id
 
-// <{ DEC }>s // recv_internal
-<{ DROP 128517 PUSHINT }>s
+// <b 1 32 u, 1 16 i, 44 256 u, "zevlg" $, 0 8 u, b> <s
+// -1
+<b 1 16 i, "zevlg" $, 0 8 u, b> <s
+"dnsresolve" method_id
+
 "mtdns.fif" include <s
-|_
-
-
 // <b 0 1 u, b> // data
 "test_dict" file>B B>boc
 

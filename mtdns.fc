@@ -1,7 +1,28 @@
 ;; Lib stuff
+;; to lib
 
+;; XXX: autokeylen
 (slice, int) dict_get?(cell dict, int key_len, slice key) asm(key dict key_len) "DICTGET" "NULLSWAPIFNOT";
+builder store_zeroes(builder b, int len) asm "STZEROES";
 
+;; XXX: try DICTUSET instead of DICTUSETB
+
+
+;; helpers
+
+slice rpad(in_slice) {
+  var str = begin_cell();
+  var b = -1;
+  var len = 0;
+
+  while (b = in_slice~load_uint(8)) {
+    len = len + 1;
+    str = str.store_uint(b, 8);
+  }
+  str = str.store_zeroes( (32 - len) * 8 );
+
+  return str.end_cell().begin_parse();
+}
 
 
 ;; Manual Ton DNS
@@ -10,63 +31,49 @@
   ;; do nothing for internal messages
 }
 
-slice recv_external(slice in_msg) impure {
-  var len = 0;
-  var b = -1;
-  var str = begin_cell();
+() recv_external(slice in_msg) impure {
 
-  while (b = in_msg~load_uint(8)) {
-    str = str.store_uint(b, 8);
-    len = len + 1;
-  }
-  while (len <= 32) {
-    str = str.store_uint(0, 8);
-    len = len + 1;
-  }
-  var str_slc = str.end_cell().begin_parse();
+  var op = in_msg~load_uint(32);
+  throw_if(35, op != 1);
+
+  var cat_id = in_msg~load_int(16);
+  var rec_value = in_msg~load_uint(256);
+  var str_slc = rpad(in_msg);
 
   var cs = get_data().begin_parse();
   var records = cs~load_dict();
   cs.end_parse();
 
-  records~dict_set_builder(slice_bits(str_slc), str_slc, begin_cell().store_uint(65432, 32));
+  var (cat_slice, found) = records.dict_get?(slice_bits(str_slc), str_slc);
+  var record_cats = found ? cat_slice~load_dict() : new_dict();
+  record_cats~idict_set_builder(16, cat_id, begin_cell().store_uint(rec_value, 256));
+  records~dict_set_builder(slice_bits(str_slc), str_slc, begin_cell().store_dict(record_cats));
 
   set_data(begin_cell().store_dict(records).end_cell());
   accept_message();
-
-  return str_slc;
 }
 
 
 ;; Get methods
 
-int resolve(slice strs) method_id {
-  var len = 0;
-  var b = -1;
-  var str = begin_cell();
-
-  while (b = strs~load_uint(8)) {
-    str = str.store_uint(b, 8);
-    len = len + 1;
-  }
-  while (len <= 32) {
-    str = str.store_uint(0, 8);
-    len = len + 1;
-  }
-  var str_slc = str.end_cell().begin_parse();
+(int, cell) dnsresolve(slice req) method_id {
+  var cat_id = req~load_int(16);
+  var str_slc = rpad(req);
 
   var cs = get_data().begin_parse();
   var records = cs~load_dict();
   cs.end_parse();
 
-  var (val, found) = records.dict_get?(slice_bits(str_slc), str_slc);
-
+  var (cat_slice, found) = records.dict_get?(slice_bits(str_slc), str_slc);
   if (found) {
-    return val~load_uint(32);
-  } else {
-    return 675;
+    var record_cats = cat_slice~load_dict();
+    var (rec, cat_found) = record_cats.idict_get?(16, cat_id);
+    if (cat_found) {
+      return (slice_bits(str_slc), begin_cell().store_uint(rec~load_uint(256), 256).end_cell());
+    }
   }
-}
 
+  return (0, begin_cell().end_cell());
+}
 
 

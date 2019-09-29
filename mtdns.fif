@@ -1,100 +1,116 @@
 // automatically generated from `/Users/stas/code/ton/crypto/smartcont/stdlib.fc` `mtdns.fc` 
 PROGRAM{
+  DECLPROC rpad
   DECLPROC recv_internal
   DECLPROC recv_external
-  128517 DECLMETHOD resolve
+  123660 DECLMETHOD dnsresolve
+  rpad PROC:<{
+    //  in_slice
+    NEWC	//  in_slice str
+    0 PUSHINT	//  in_slice str len=0
+    WHILE:<{
+      s0 s2 XCHG	//  len str in_slice
+      8 LDU	//  len str b in_slice
+      OVER	//  len str b in_slice b
+    }>DO<{	//  len str b in_slice
+      s0 s3 XCHG	//  in_slice str b len
+      INC	//  in_slice str b len
+      s0 s2 XCHG	//  in_slice len b str
+      8 STU	//  in_slice len str
+      SWAP	//  in_slice str len
+    }>	//  len str b in_slice
+    2DROP	//  len str
+    32 PUSHINT	//  len str _14=32
+    ROT	//  str _14=32 len
+    SUB	//  str _15
+    3 LSHIFT#	//  str _17
+    STZEROES	//  str
+    ENDC	//  _19
+    CTOS	//  _20
+  }>
   recv_internal PROC:<{
     //  in_msg
     DROP	// 
   }>
   recv_external PROC:<{
     //  in_msg
-    0 PUSHINT	//  in_msg len=0
-    NEWC	//  in_msg len=0 str
-    WHILE:<{
-      s0 s2 XCHG	//  str len in_msg
-      8 LDU	//  str len b in_msg
-      OVER	//  str len b in_msg b
-    }>DO<{	//  str len b in_msg
-      s0 s3 XCHG	//  in_msg len b str
-      8 STU	//  in_msg len str
-      SWAP	//  in_msg str len
-      INC	//  in_msg str len
-      SWAP	//  in_msg len str
-    }>	//  str len b in_msg
-    2DROP	//  str len
-    WHILE:<{
-      DUP	//  str len len
-      33 LESSINT	//  str len _15
-    }>DO<{	//  str len
-      0 PUSHINT	//  str len _16=0
-      ROT	//  len _16=0 str
-      8 STU	//  len str
-      SWAP	//  str len
-      INC	//  str len
-    }>	//  str len
-    DROP	//  str
-    ENDC	//  _22
-    CTOS	//  str_slc
-    c4 PUSH	//  str_slc _25
-    CTOS	//  str_slc cs
-    LDDICT	//  str_slc records cs
+    32 LDU	//  op in_msg
+    SWAP	//  in_msg op
+    1 NEQINT	//  in_msg _7
+    35 THROWIF
+    16 LDI	//  cat_id in_msg
+    256 LDU	//  cat_id rec_value in_msg
+    rpad CALLDICT	//  cat_id rec_value str_slc
+    c4 PUSH	//  cat_id rec_value str_slc _20
+    CTOS	//  cat_id rec_value str_slc cs
+    LDDICT	//  cat_id rec_value str_slc records cs
     ENDS
-    65432 PUSHINT	//  str_slc records _32=65432
-    NEWC	//  str_slc records _32=65432 _33
-    32 STU	//  str_slc records _35
-    s2 PUSH	//  str_slc records _35 str_slc
-    SBITS	//  str_slc records _35 _36
-    s3 s2 s2 PUXC2	//  str_slc _35 str_slc records _36
-    DICTSETB	//  str_slc records
-    NEWC	//  str_slc records _38
-    STDICT	//  str_slc _39
-    ENDC	//  str_slc _40
+    OVER	//  cat_id rec_value str_slc records str_slc
+    SBITS	//  cat_id rec_value str_slc records _28
+    s2 s1 s(-2) PU2XC	//  cat_id rec_value str_slc records str_slc records _28
+    DICTGET
+    NULLSWAPIFNOT	//  cat_id rec_value str_slc records cat_slice found
+    IF:<{	//  cat_id rec_value str_slc records cat_slice
+      LDDICT	//  cat_id rec_value str_slc records _62 _61
+      DROP	//  cat_id rec_value str_slc records _31
+    }>ELSE<{	//  cat_id rec_value str_slc records cat_slice
+      DROP	//  cat_id rec_value str_slc records
+      NEWDICT	//  cat_id rec_value str_slc records _31
+    }>	//  cat_id rec_value str_slc records record_cats
+    NEWC	//  cat_id rec_value str_slc records record_cats _36
+    s1 s4 XCHG	//  cat_id record_cats str_slc records rec_value _36
+    256 STU	//  cat_id record_cats str_slc records _38
+    s0 s4 s3 XCHG3
+    16 PUSHINT	//  records str_slc _38 cat_id record_cats _39=16
+    DICTISETB	//  records str_slc record_cats
+    NEWC	//  records str_slc record_cats _42
+    STDICT	//  records str_slc _43
+    OVER	//  records str_slc _43 str_slc
+    SBITS	//  records str_slc _43 _44
+    s1 s3 XCHG	//  _43 str_slc records _44
+    DICTSETB	//  records
+    NEWC	//  records _46
+    STDICT	//  _47
+    ENDC	//  _48
     c4 POP
     ACCEPT
   }>
-  resolve PROC:<{
-    //  strs
-    0 PUSHINT	//  strs len=0
-    NEWC	//  strs len=0 str
-    WHILE:<{
-      s0 s2 XCHG	//  str len strs
-      8 LDU	//  str len b strs
-      OVER	//  str len b strs b
-    }>DO<{	//  str len b strs
-      s0 s3 XCHG	//  strs len b str
-      8 STU	//  strs len str
-      SWAP	//  strs str len
-      INC	//  strs str len
-      SWAP	//  strs len str
-    }>	//  str len b strs
-    2DROP	//  str len
-    WHILE:<{
-      DUP	//  str len len
-      33 LESSINT	//  str len _15
-    }>DO<{	//  str len
-      0 PUSHINT	//  str len _16=0
-      ROT	//  len _16=0 str
-      8 STU	//  len str
-      SWAP	//  str len
-      INC	//  str len
-    }>	//  str len
-    DROP	//  str
-    ENDC	//  _22
-    CTOS	//  str_slc
-    c4 PUSH	//  str_slc _25
-    CTOS	//  str_slc cs
-    LDDICT	//  str_slc records cs
+  dnsresolve PROC:<{
+    //  req
+    16 LDI	//  cat_id req
+    rpad CALLDICT	//  cat_id str_slc
+    c4 PUSH	//  cat_id str_slc _8
+    CTOS	//  cat_id str_slc cs
+    LDDICT	//  cat_id str_slc records cs
     ENDS
-    OVER	//  str_slc records str_slc
-    SBITS	//  str_slc records _33
+    OVER	//  cat_id str_slc records str_slc
+    SBITS	//  cat_id str_slc records _16
+    s2 s(-1) s(-1) PUXC2	//  cat_id str_slc str_slc records _16
     DICTGET
-    NULLSWAPIFNOT	//  val found
-    IFJMP:<{	//  val
-      32 LDU	//  _46 _45
-      DROP	//  _35
-    }>	//  val
-    DROP	// 
-    675 PUSHINT	//  _38=675
+    NULLSWAPIFNOT	//  cat_id str_slc cat_slice found
+    IF:<{	//  cat_id str_slc cat_slice
+      LDDICT	//  cat_id str_slc _43 _42
+      DROP	//  cat_id str_slc record_cats
+      s1 s2 XCHG
+      16 PUSHINT	//  str_slc cat_id record_cats _23=16
+      DICTIGET
+      NULLSWAPIFNOT	//  str_slc rec cat_found
+      IFJMP:<{	//  str_slc rec
+        SWAP	//  rec str_slc
+        SBITS	//  rec _25
+        SWAP	//  _25 rec
+        256 LDU	//  _25 _47 _46
+        DROP	//  _25 _26
+        NEWC	//  _25 _26 _29
+        256 STU	//  _25 _31
+        ENDC	//  _25 _32
+      }>	//  str_slc rec
+      2DROP	// 
+    }>ELSE<{
+      3 BLKDROP	// 
+    }>
+    0 PUSHINT	//  _33=0
+    NEWC	//  _33=0 _34
+    ENDC	//  _33=0 _35
   }>
 }END>c
