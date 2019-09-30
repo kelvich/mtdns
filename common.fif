@@ -8,7 +8,7 @@ variable curr_data
 
 // ( str -- method_id )
 { 
-    <b swap $, b> <s dup sbits 8 / B@ drop crc16 0xffff and 0x10000 or
+    <b swap $, b> <s dup sbits 8 / B@ crc16 0xffff and 0x10000 or
 } : method_id
 
 // ( args method_id -- results )
