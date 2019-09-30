@@ -35,6 +35,11 @@ run_method
 run_method
 ."stk" cr .s cr
 
+<b 1 32 u, 2 16 i, 333444 256 u, "yandex" $, b> <s
+-1
+run_method
+."stk" cr .s cr
+
 // resolve domains
 
 1 <b "yandex" $, b> <s
@@ -43,6 +48,17 @@ run_method
 ."stk" cr .s cr
 drop drop
 
+2 <b "yandex" $, b> <s
+"dnsresolve" method_id
+run_method
+."stk" cr .s cr
+drop drop
+
+3 <b "yandex" $, b> <s
+"dnsresolve" method_id
+run_method
+."stk" cr .s cr
+drop drop
 
 1 <b "stas" $, b> <s
 "dnsresolve" method_id
