@@ -4,6 +4,7 @@
 variable mtdns-seqno
 variable mtdns-pubkey
 variable mtdns-privkey
+variable curr_data
 
 // ( str -- method_id )
 { 
@@ -13,10 +14,9 @@ variable mtdns-privkey
 // ( args method_id -- results )
 {
     "mtdns.fif" include <s
-    "test.data" file>B B>boc
+    curr_data @ B>boc
     runvm
-    // ."current data:" dup <s csr. cr
-    boc>B "test.data" B>file
+    boc>B curr_data !
 } : run_method
 
 // ( -- seqno )
@@ -35,7 +35,7 @@ variable mtdns-privkey
     <b 0 32 u,
        mtdns-pubkey @ B,
        null dict,
-    b> boc>B "test.data" B>file
+    b> boc>B curr_data !
 } : init_test
 
 // ( msg -- results )
