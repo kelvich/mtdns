@@ -5,6 +5,13 @@
 (slice, int) dict_get?(cell dict, int key_len, slice key) asm(key dict key_len) "DICTGET" "NULLSWAPIFNOT";
 builder store_zeroes(builder b, int len) asm "STZEROES";
 
+;; XXX: autokeylen
+cell dict_set_ref(cell dict, int key_len, slice key, cell value) asm(value key dict key_len) "DICTSETREF";
+(cell, ()) ~dict_set_ref(cell dict, int key_len, slice key, cell value) asm(value key dict key_len) "DICTSETREF";
+(cell, int) dict_get_ref?(cell dict, int key_len, slice key) asm(key dict key_len) "DICTGETREF" "NULLSWAPIFNOT";
+
+cell null() asm "PUSHNULL";
+
 ;; XXX: try DICTUSET instead of DICTUSETB
 
 
@@ -38,10 +45,18 @@ slice rpad(slice str) {
   var records = cs~load_dict();
   cs.end_parse();
 
-  var (cat_slice, found) = records.dict_get?(slice_bits(str_slc), str_slc);
-  var record_cats = found ? cat_slice~load_dict() : new_dict();
+  var (cat_cell, found) = records.dict_get_ref?(slice_bits(str_slc), str_slc);
+  var record_cats = new_dict();
+  if (found) {
+    var ccs = cat_cell.begin_parse();
+    record_cats = ccs~load_dict();
+  }
+
   record_cats~idict_set_builder(16, cat_id, begin_cell().store_uint(rec_value, 256));
-  records~dict_set_builder(slice_bits(str_slc), str_slc, begin_cell().store_dict(record_cats));
+
+  var qq = begin_cell().store_dict(record_cats).end_cell();
+
+  records~dict_set_ref(slice_bits(str_slc), str_slc, qq);
 
   set_data(begin_cell().store_dict(records).end_cell());
   accept_message();
@@ -58,18 +73,22 @@ slice rpad(slice str) {
 
   var req = rpad(in_req);
 
-  var (cat_slice, found) = records.dict_get?(slice_bits(req), req);
+  var (cat_cell, found) = records.dict_get_ref?(slice_bits(req), req);
   if (found) {
-    var record_cats = cat_slice~load_dict();
+    var ccs = cat_cell.begin_parse();
+    var record_cats = ccs~load_dict();
     var (rec, cat_found) = record_cats.idict_get?(16, cat_id);
     if (cat_found) {
       var res = rec~load_uint(256);
       return (res, begin_cell().store_uint(res, 256).end_cell());
+    } else {
+      ;; workaroung for noreturn marking bug
+      return (0, null());
     }
   } else {
     ;; workaroung for noreturn marking bug
-    return (0, begin_cell().end_cell());
+    return (0, null());
   }
 
-  return (0, begin_cell().end_cell());
+  ;; return (0, null());
 }
