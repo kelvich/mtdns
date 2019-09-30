@@ -1,0 +1,79 @@
+"TonUtil.fif" include
+"Asm.fif" include
+
+variable mtdns-seqno
+variable mtdns-pubkey
+variable mtdns-privkey
+
+// ( str -- method_id )
+{ 
+    <b swap $, b> <s dup sbits 8 / B@ drop crc16 0xffff and 0x10000 or
+} : method_id
+
+// ( args method_id -- results )
+{
+    "mtdns.fif" include <s
+    "test.data" file>B B>boc
+    runvm
+    // ."current data:" dup <s csr. cr
+    boc>B "test.data" B>file
+} : run_method
+
+// ( -- )
+{
+    mtdns-seqno @ dup 1+ mtdns-seqno !
+} : get-mtdns-seqno
+
+// ( -- )
+{
+    mtdns-seqno 0!
+    "test.pk" load-generate-keypair
+    mtdns-privkey !
+    mtdns-pubkey !
+
+    <b 0 32 u,
+       mtdns-pubkey @ B,
+       null dict,
+    b> boc>B "test.data" B>file
+} : init_test
+
+// ( msg -- results )
+{
+    dup hash mtdns-privkey @ ed25519_sign_uint // msg sig
+    <b swap B, swap <s s, b> <s
+    -1
+    run_method
+} : send_ext_msg
+
+// ( dname cat_id addr -- retcode )
+{
+    ."domain_upsert: " .s ." -> "
+    swap // dname addr cat_id
+    <b get-mtdns-seqno 32 u, 0x2 32 u, swap 16 i, swap 256 u, swap $, b> // msg
+    send_ext_msg
+    .s
+} : domain_upsert
+
+// ( dname cat_id -- retcode )
+{
+    ."domain_delete: " .s ." -> "
+    <b get-mtdns-seqno 32 u, 0x3 32 u, swap 16 i, swap $, b> // msg
+    send_ext_msg
+    .s
+} : domain_delete
+
+// ( dname cat_id -- len rec_value retcode )
+{
+    ."get_dnsresolve: " .s ." -> "
+    <b rot $, b> <s
+    "dnsresolve" method_id
+    run_method
+    swap <s 256 i@+ s> swap
+    .s
+} : get_dnsresolve
+
+// (i1 i2 -- )
+{ = { abort"assert_eq failed" } ifnot } : assert_eq
+
+// (i1 i2 -- )
+{ = { abort"assert_eq failed" } if } : assert_neq

@@ -1,23 +1,20 @@
+;;
+;; Manual TON DNS contract
+;;
+
 ;; Lib stuff
-;; to lib
 
-;; XXX: autokeylen
 (slice, int) dict_get?(cell dict, int key_len, slice key) asm(key dict key_len) "DICTGET" "NULLSWAPIFNOT";
-builder store_zeroes(builder b, int len) asm "STZEROES";
-
-;; XXX: autokeylen
 cell dict_set_ref(cell dict, int key_len, slice key, cell value) asm(value key dict key_len) "DICTSETREF";
 (cell, ()) ~dict_set_ref(cell dict, int key_len, slice key, cell value) asm(value key dict key_len) "DICTSETREF";
 (cell, int) dict_get_ref?(cell dict, int key_len, slice key) asm(key dict key_len) "DICTGETREF" "NULLSWAPIFNOT";
-
+(cell, int) dict_delete?(cell dict, int key_len, slice key) asm(key dict key_len) "DICTDEL";
+builder store_zeroes(builder b, int len) asm "STZEROES";
 cell null() asm "PUSHNULL";
-
-;; XXX: try DICTUSET instead of DICTUSETB
-
 
 ;; helpers
 
-;; workaround for variable keylen dict bugs
+;; workaround for variable keylen dict problems
 slice rpad(slice str) {
   return begin_cell()
     .store_slice(str)
@@ -26,69 +23,127 @@ slice rpad(slice str) {
     .begin_parse();
 }
 
-;; Manual Ton DNS
+(int, int, cell) load_data() {
+  var ds = get_data().begin_parse();
+  var res = (ds~load_uint(32), ds~load_uint(256), ds~load_dict());
+  ds.end_parse();
+  return res;
+}
+
+() store_data(seqno, public_key, domains) impure {
+  set_data(begin_cell()
+    .store_uint(seqno, 32)
+    .store_uint(public_key, 256)
+    .store_dict(domains)
+  .end_cell());
+}
 
 () recv_internal(slice in_msg) impure {
   ;; do nothing for internal messages
 }
 
-() recv_external(slice in_msg) impure {
+_ ~process_domain_upsert(domains, msg) impure {
+  var records = new_dict();
+  var (cat_id, rec_value, dname) = (msg~load_int(16), msg~load_uint(256), rpad(msg));
 
-  var op = in_msg~load_uint(32);
-  throw_if(35, op != 1);
-
-  var cat_id = in_msg~load_int(16);
-  var rec_value = in_msg~load_uint(256);
-  var str_slc = rpad(in_msg);
-
-  var cs = get_data().begin_parse();
-  var records = cs~load_dict();
-  cs.end_parse();
-
-  var (cat_cell, found) = records.dict_get_ref?(slice_bits(str_slc), str_slc);
-  var record_cats = new_dict();
+  var (records_cell, found) = domains.dict_get_ref?(slice_bits(dname), dname);
   if (found) {
-    var ccs = cat_cell.begin_parse();
-    record_cats = ccs~load_dict();
+    var rs = records_cell.begin_parse();
+    records = rs~load_dict();
+    rs.end_parse();
   }
 
-  record_cats~idict_set_builder(16, cat_id, begin_cell().store_uint(rec_value, 256));
+  records~idict_set_builder(16, cat_id, begin_cell()
+    .store_uint(rec_value, 256));
+  domains~dict_set_ref(slice_bits(dname), dname, begin_cell()
+    .store_dict(records)
+    .end_cell());
 
-  var qq = begin_cell().store_dict(record_cats).end_cell();
-
-  records~dict_set_ref(slice_bits(str_slc), str_slc, qq);
-
-  set_data(begin_cell().store_dict(records).end_cell());
-  accept_message();
+  return (domains, ());
 }
 
+_ ~process_domain_delete(domains, msg) impure {
+  var (cat_id, dname) = (msg~load_int(16), rpad(msg));
+
+  if (cat_id == 0) {
+    var (records_cell, found) = domains.dict_delete?(slice_bits(dname), dname);
+    // keep dname?
+    throw_unless(44, found);
+  } else {
+    var (records_cell, found) = domains.dict_get_ref?(slice_bits(dname), dname);
+    throw_unless(44, found);
+    var rs = records_cell.begin_parse();
+    var records = rs~load_dict();
+    rs.end_parse();
+
+    records~idict_delete?(16, cat_id);
+    domains~dict_set_ref(slice_bits(dname), dname, begin_cell()
+      .store_dict(records)
+      .end_cell());
+  }
+}
+
+() recv_external(slice in_msg) impure {
+  var signature = in_msg~load_bits(512);
+  var msg_slice = in_msg;
+  var (msg_seqno, op) = (msg_slice~load_uint(32), msg_slice~load_uint(32));
+  var (stored_seqno, public_key, domains) = load_data();
+
+  throw_unless(33, msg_seqno == stored_seqno);
+  throw_unless(34, check_signature(slice_hash(in_msg), signature, public_key));
+
+  if (op == 0x0) {
+    ;; process_init();
+  } elseif (op == 0x2) {
+    domains~process_domain_upsert(msg_slice);
+  } elseif (op == 0x3) {
+    domains~process_domain_delete(msg_slice);
+  } elseif (op == 0x10) {
+    public_key = msg_slice~load_uint(256);
+  } elseif (op == 0x11) {
+    set_code(msg_slice~load_ref());
+  } else {
+    throw(50);
+  }
+
+  accept_message();
+  store_data(stored_seqno + 1, public_key, domains);
+}
 
 ;; Get methods
 
-(int, cell) dnsresolve(int cat_id, slice in_req) method_id {
+(int, cell) dnsresolve(int cat_id, slice dname_req) method_id {
+  ;; XXX try subdomains
 
-  var cs = get_data().begin_parse();
-  var records = cs~load_dict();
-  cs.end_parse();
+  ;; XXX skip/preload
+  var (stored_seqno, public_key, domains) = load_data();
+  var dname_bits = slice_bits(dname_req);
+  var dname = rpad(dname_req);
 
-  var req = rpad(in_req);
-
-  var (cat_cell, found) = records.dict_get_ref?(slice_bits(req), req);
-  if (found) {
-    var ccs = cat_cell.begin_parse();
-    var record_cats = ccs~load_dict();
-    var (rec, cat_found) = record_cats.idict_get?(16, cat_id);
-    if (cat_found) {
-      var res = rec~load_uint(256);
-      return (res, begin_cell().store_uint(res, 256).end_cell());
-    } else {
-      ;; workaroung for noreturn marking bug
-      return (0, null());
-    }
-  } else {
-    ;; workaroung for noreturn marking bug
+  var (records_cell, found) = domains.dict_get_ref?(slice_bits(dname), dname);
+  ifnot (found) {
     return (0, null());
   }
 
-  ;; return (0, null());
+  var rs = records_cell.begin_parse();
+  var records = rs~load_dict();
+  rs.end_parse();
+
+  var (rec_slice, cat_found) = records.idict_get?(16, cat_id);
+  if (cat_found) {
+    var rec_value = rec_slice~load_uint(256);
+    return (dname_bits, begin_cell()
+      .store_uint(rec_value, 256)
+      .end_cell());
+  } else {
+    return (0, null());
+  }
+}
+
+int seqno() method_id {
+  return get_data().begin_parse().preload_uint(32);
+}
+
+(int, int, int) version() method_id {
+  return (0, 0, 1);
 }
