@@ -9,6 +9,7 @@ cell dict_set_ref(cell dict, int key_len, slice key, cell value) asm(value key d
 (cell, ()) ~dict_set_ref(cell dict, int key_len, slice key, cell value) asm(value key dict key_len) "DICTSETREF";
 (cell, int) dict_get_ref?(cell dict, int key_len, slice key) asm(key dict key_len) "DICTGETREF" "NULLSWAPIFNOT";
 (cell, int) dict_delete?(cell dict, int key_len, slice key) asm(key dict key_len) "DICTDEL";
+(cell, (int)) ~dict_delete?(cell dict, int key_len, slice key) asm(key dict key_len) "DICTDEL";
 builder store_zeroes(builder b, int len) asm "STZEROES";
 cell null() asm "PUSHNULL";
 
@@ -55,6 +56,8 @@ _ ~process_domain_upsert(domains, msg) impure {
 
   records~idict_set_builder(16, cat_id, begin_cell()
     .store_uint(rec_value, 256));
+
+  ;; should we do that for existing key?
   domains~dict_set_ref(slice_bits(dname), dname, begin_cell()
     .store_dict(records)
     .end_cell());
@@ -66,8 +69,7 @@ _ ~process_domain_delete(domains, msg) impure {
   var (cat_id, dname) = (msg~load_int(16), rpad(msg));
 
   if (cat_id == 0) {
-    var (records_cell, found) = domains.dict_delete?(slice_bits(dname), dname);
-    // keep dname?
+    var found = domains~dict_delete?(slice_bits(dname), dname);
     throw_unless(44, found);
   } else {
     var (records_cell, found) = domains.dict_get_ref?(slice_bits(dname), dname);
@@ -81,6 +83,7 @@ _ ~process_domain_delete(domains, msg) impure {
       .store_dict(records)
       .end_cell());
   }
+  return (domains, ());
 }
 
 () recv_external(slice in_msg) impure {

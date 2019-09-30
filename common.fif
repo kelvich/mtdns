@@ -19,10 +19,11 @@ variable mtdns-privkey
     boc>B "test.data" B>file
 } : run_method
 
+// ( -- seqno )
+{ mtdns-seqno @ dup 1+ mtdns-seqno ! } : get-mtdns-seqno
+
 // ( -- )
-{
-    mtdns-seqno @ dup 1+ mtdns-seqno !
-} : get-mtdns-seqno
+{ mtdns-seqno @ 1- mtdns-seqno ! } : dec-mtdns-seqno
 
 // ( -- )
 {
@@ -62,18 +63,60 @@ variable mtdns-privkey
     .s
 } : domain_delete
 
+// ( new_pubkey -- retcode )
+{
+    ."mtdns_transfer: " .s ." -> "
+    <b get-mtdns-seqno 32 u, 0x10 32 u, swap B, b> // msg
+    send_ext_msg
+    .s
+} : mtdns_transfer
+
+// ( new_code -- retcode )
+{
+    ."mtdns_upgrade: " .s ." -> "
+    <b get-mtdns-seqno 32 u, 0x11 32 u, swap ref, b> // msg
+    send_ext_msg
+    .s
+} : mtdns_upgrade
+
+// ( -- retcode )
+{
+    ."mtdns_unknown_op: " .s ." -> "
+    <b get-mtdns-seqno 32 u, 0xff 32 u, b> // msg
+    send_ext_msg
+    .s
+} : mtdns_unknown_op
+
 // ( dname cat_id -- len rec_value retcode )
 {
     ."get_dnsresolve: " .s ." -> "
     <b rot $, b> <s
     "dnsresolve" method_id
     run_method
-    swap <s 256 i@+ s> swap
+    swap dup null? { <s 256 i@+ s> } ifnot swap
     .s
 } : get_dnsresolve
 
-// (i1 i2 -- )
-{ = { abort"assert_eq failed" } ifnot } : assert_eq
+// ( -- (v1, v2, v3) retcode )
+{
+    ."get_version: " .s ." -> "
+    "version" method_id
+    run_method
+    .s
+} : get_version
+
+// ( -- seqno retcode )
+{
+    ."get_seqno: " .s ." -> "
+    "seqno" method_id
+    run_method
+    .s
+} : get_seqno
 
 // (i1 i2 -- )
-{ = { abort"assert_eq failed" } if } : assert_neq
+{ = { "assert_eq failed" abort } ifnot } : assert_eq
+
+// (i1 i2 -- )
+{ = { "assert_eq failed" abort } if } : assert_neq
+
+{ null? { "assert_null failed" abort } ifnot } : assert_null
