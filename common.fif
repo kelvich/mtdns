@@ -25,6 +25,9 @@ variable curr_data
 // ( -- )
 { mtdns-seqno @ 1- mtdns-seqno ! } : dec-mtdns-seqno
 
+// ( int -- addr )
+{ <b swap 32 u, b> hashu 13 swap } : gen-test-addr
+
 // ( -- )
 {
     mtdns-seqno 0!
@@ -46,11 +49,12 @@ variable curr_data
     run_method
 } : send_ext_msg
 
-// ( dname cat_id addr -- retcode )
+// ( dname cat_id wc addr -- retcode )
 {
     ."domain_upsert: " .s ." -> "
-    swap // dname addr cat_id
-    <b get-mtdns-seqno 32 u, 0x2 32 u, swap 16 i, swap 256 u, swap $, b> // msg
+    rot // dname wc addr cat_id
+    <b get-mtdns-seqno 32 u, 0x2 32 u, swap 16 i, -rot .s addr, .s swap .s $, b> // msg
+    .s
     send_ext_msg
     .s
 } : domain_upsert
@@ -93,7 +97,7 @@ variable curr_data
     <b rot $, b> <s
     "dnsresolve" method_id
     run_method
-    swap dup null? { <s 256 i@+ s> } ifnot swap
+    swap dup null? { <s 8 i@+ 256 u@+ s> } ifnot rot
     .s
 } : get_dnsresolve
 
@@ -115,6 +119,9 @@ variable curr_data
 
 // (i1 i2 -- )
 { = { "assert_eq failed" abort } ifnot } : assert_eq
+
+// (a1 a2 b1 b2 -- )
+{ rot assert_eq assert_eq } : assert_eq2
 
 // (i1 i2 -- )
 { = { "assert_eq failed" abort } if } : assert_neq

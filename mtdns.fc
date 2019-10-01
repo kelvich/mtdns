@@ -45,7 +45,10 @@ slice rpad(slice str) {
 
 _ ~process_domain_upsert(domains, msg) impure {
   var records = new_dict();
-  var (cat_id, rec_value, dname) = (msg~load_int(16), msg~load_uint(256), rpad(msg));
+  var cat_id = msg~load_int(16);
+  var wc = msg~load_int(8);
+  var addr = msg~load_uint(256);
+  var dname = rpad(msg);
 
   var (records_cell, found) = domains.dict_get_ref?(slice_bits(dname), dname);
   if (found) {
@@ -55,7 +58,8 @@ _ ~process_domain_upsert(domains, msg) impure {
   }
 
   records~idict_set_builder(16, cat_id, begin_cell()
-    .store_uint(rec_value, 256));
+    .store_int(wc, 8)
+    .store_uint(addr, 256));
 
   ;; should we do that for existing key?
   domains~dict_set_ref(slice_bits(dname), dname, begin_cell()
@@ -135,9 +139,11 @@ _ ~process_domain_delete(domains, msg) impure {
 
       var (rec_slice, cat_found) = records.idict_get?(16, cat_id);
       if (cat_found) {
-        var rec_value = rec_slice~load_uint(256);
+        var wc = rec_slice~load_int(8);
+        var addr = rec_slice~load_uint(256);
         return (slice_bits(dname_req), begin_cell()
-          .store_uint(rec_value, 256)
+          .store_int(wc, 8)
+          .store_uint(addr, 256)
           .end_cell());
       }
       ;; while ( (~ dname_req.slice_empty?()) & (dname_req~load_uint(8) != 0) ) { }

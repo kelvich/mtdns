@@ -4,47 +4,47 @@ init_test
 
 // add some test domains
 
-"телеграм" 1 100 domain_upsert 0 assert_eq
-"yandex" 1 123 domain_upsert 0 assert_eq
-"stas"   1 124 domain_upsert 0 assert_eq
-"zevlg"  1 125 domain_upsert 0 assert_eq
-"yandex" 2 126 domain_upsert 0 assert_eq
-"faraway" -1 127 domain_upsert 0 assert_eq
+"телеграм" 1 100 gen-test-addr domain_upsert 0 assert_eq
+"yandex" 1 123 gen-test-addr domain_upsert 0 assert_eq
+"stas"   1 124 gen-test-addr domain_upsert 0 assert_eq
+"zevlg"  1 125 gen-test-addr domain_upsert 0 assert_eq
+"yandex" 2 126 gen-test-addr domain_upsert 0 assert_eq
+"faraway" -1 127 gen-test-addr domain_upsert 0 assert_eq
 
 // resolve domains
 
-"yandex" 1 get_dnsresolve 0 assert_eq 123 assert_eq 48 assert_eq
-"yandex" 2 get_dnsresolve 0 assert_eq 126 assert_eq 48 assert_eq
-"stas" 1 get_dnsresolve 0 assert_eq 124 assert_eq 32 assert_eq
-"zevlg" 1 get_dnsresolve 0 assert_eq 125 assert_eq 40 assert_eq
-"телеграм" 1 get_dnsresolve  0 assert_eq 100 assert_eq 128 assert_eq
+"yandex" 1 get_dnsresolve 0 assert_eq 123 gen-test-addr assert_eq2 48 assert_eq
+"yandex" 2 get_dnsresolve 0 assert_eq 126 gen-test-addr assert_eq2 48 assert_eq
+"stas" 1 get_dnsresolve 0 assert_eq 124 gen-test-addr assert_eq2 32 assert_eq
+"zevlg" 1 get_dnsresolve 0 assert_eq 125 gen-test-addr assert_eq2 40 assert_eq
+"телеграм" 1 get_dnsresolve  0 assert_eq 100 gen-test-addr assert_eq2 128 assert_eq
 
 // "yandex" 2 get_dnsresolve_all
 
 // update
 
-"uptest" 1 123 domain_upsert 0 assert_eq
-"uptest" 1 223 domain_upsert 0 assert_eq
-"uptest" 1 get_dnsresolve 0 assert_eq 223 assert_eq drop
+"uptest" 1 123 gen-test-addr domain_upsert 0 assert_eq
+"uptest" 1 223 gen-test-addr domain_upsert 0 assert_eq
+"uptest" 1 get_dnsresolve 0 assert_eq 223 gen-test-addr assert_eq2 drop
 
 // delete test
 
-"deltest1" 1 100 domain_upsert 0 assert_eq
-"deltest1" 2 200 domain_upsert 0 assert_eq
-"deltest1" 3 300 domain_upsert 0 assert_eq
+"deltest1" 1 100 gen-test-addr domain_upsert 0 assert_eq
+"deltest1" 2 200 gen-test-addr domain_upsert 0 assert_eq
+"deltest1" 3 300 gen-test-addr domain_upsert 0 assert_eq
 "deltest1" 0 domain_delete 0 assert_eq
 "deltest1" 1 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
 "deltest1" 2 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
 "deltest1" 4 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
 
-"deltest2" 1 100 domain_upsert 0 assert_eq
-"deltest2" 2 200 domain_upsert 0 assert_eq
+"deltest2" 1 100 gen-test-addr domain_upsert 0 assert_eq
+"deltest2" 2 200 gen-test-addr domain_upsert 0 assert_eq
 "deltest2" 2 domain_delete 0 assert_eq
 "deltest2" 2 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
-"deltest2" 1 get_dnsresolve 0 assert_eq 100 assert_eq 64 assert_eq
+"deltest2" 1 get_dnsresolve 0 assert_eq 100 gen-test-addr assert_eq2 64 assert_eq
 
-"deltest3" 1 100 domain_upsert 0 assert_eq
-"deltest3" 2 200 domain_upsert 0 assert_eq
+"deltest3" 1 100 gen-test-addr domain_upsert 0 assert_eq
+"deltest3" 2 200 gen-test-addr domain_upsert 0 assert_eq
 "deltest3" 2 domain_delete 0 assert_eq
 "deltest3" 1 domain_delete 0 assert_eq
 "deltest3" 2 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
@@ -56,14 +56,14 @@ variable new-privkey
 "test_transfer" load-generate-keypair new-privkey ! new-pubkey !
 new-pubkey @ mtdns_transfer 0 assert_eq
 // should work
-"телеграм" 1 get_dnsresolve 0 assert_eq 100 assert_eq 128 assert_eq
+"телеграм" 1 get_dnsresolve 0 assert_eq 100 gen-test-addr assert_eq2 128 assert_eq
 // should fail with old sig
-"telegram" 1 100 domain_upsert 34 assert_eq drop dec-mtdns-seqno
+"telegram" 1 100 gen-test-addr domain_upsert 34 assert_eq drop dec-mtdns-seqno
 new-pubkey @ mtdns-pubkey !
 new-privkey @ mtdns-privkey !
 // should work now
-"telegram" 1 4242 domain_upsert 0 assert_eq
-"telegram" 1 get_dnsresolve 0 assert_eq 4242 assert_eq 64 assert_eq
+"telegram" 1 4242 gen-test-addr domain_upsert 0 assert_eq
+"telegram" 1 get_dnsresolve 0 assert_eq 4242 gen-test-addr assert_eq2 64 assert_eq
 
 // code upgrade
 
@@ -81,11 +81,12 @@ mtdns_unknown_op 50 assert_eq drop dec-mtdns-seqno
 // wrong seqno
 
 dec-mtdns-seqno
-"телеграм" 1 get_dnsresolve 0 assert_eq 100 assert_eq 128 assert_eq
-"telega" 1 400 domain_upsert 33 assert_eq drop
-"telega" 1 400 domain_upsert 0 assert_eq
+"телеграм" 1 get_dnsresolve 0 assert_eq 100 gen-test-addr assert_eq2 128 assert_eq
+"telega" 1 400 gen-test-addr domain_upsert 33 assert_eq drop
+"telega" 1 400 gen-test-addr domain_upsert 0 assert_eq
 
 
 // "yandex\0msk\0db1"
 // long domains
-// real addresses
+// return all cell
+
