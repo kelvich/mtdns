@@ -48,7 +48,15 @@ _ ~process_domain_upsert(domains, msg) impure {
   var cat_id = msg~load_int(16);
   var wc = msg~load_int(8);
   var addr = msg~load_uint(256);
-  var dname = rpad(msg);
+
+  var dname = msg~load_ref().begin_parse();
+  var dname_len = slice_bits(dname);
+  msg.end_parse();
+
+  throw_unless(35, (dname_len > 0) & (dname_len <= 32 * 8));
+  throw_unless(35, dname_len % 8 == 0);
+
+  dname = rpad(dname);
 
   var (records_cell, found) = domains.dict_get_ref?(slice_bits(dname), dname);
   if (found) {
