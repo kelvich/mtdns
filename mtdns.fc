@@ -116,31 +116,34 @@ _ ~process_domain_delete(domains, msg) impure {
 ;; Get methods
 
 (int, cell) dnsresolve(int cat_id, slice dname_req) method_id {
-  ;; XXX try subdomains
-
   ;; XXX skip/preload
   var (stored_seqno, public_key, domains) = load_data();
-  var dname_bits = slice_bits(dname_req);
-  var dname = rpad(dname_req);
 
-  var (records_cell, found) = domains.dict_get_ref?(slice_bits(dname), dname);
-  ifnot (found) {
-    return (0, null());
-  }
+  ;; ;; try subdomains
+  ;;do {
+      var dname_req_copy = dname_req;
+      var dname = rpad(dname_req_copy);
 
-  var rs = records_cell.begin_parse();
-  var records = rs~load_dict();
-  rs.end_parse();
+      var (records_cell, found) = domains.dict_get_ref?(slice_bits(dname), dname);
+      ifnot (found) {
+        return (0, null());
+      }
 
-  var (rec_slice, cat_found) = records.idict_get?(16, cat_id);
-  if (cat_found) {
-    var rec_value = rec_slice~load_uint(256);
-    return (dname_bits, begin_cell()
-      .store_uint(rec_value, 256)
-      .end_cell());
-  } else {
-    return (0, null());
-  }
+      var rs = records_cell.begin_parse();
+      var records = rs~load_dict();
+      rs.end_parse();
+
+      var (rec_slice, cat_found) = records.idict_get?(16, cat_id);
+      if (cat_found) {
+        var rec_value = rec_slice~load_uint(256);
+        return (slice_bits(dname_req), begin_cell()
+          .store_uint(rec_value, 256)
+          .end_cell());
+      }
+      ;; while ( (~ dname_req.slice_empty?()) & (dname_req~load_uint(8) != 0) ) { }
+  ;; } until (~ dname_req.slice_empty?());
+
+  return (0, null());
 }
 
 int seqno() method_id {
