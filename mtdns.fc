@@ -129,35 +129,45 @@ _ ~process_domain_delete(domains, msg) impure {
 
 (int, cell) dnsresolve(int cat_id, slice dname_req) method_id {
   ;; XXX skip/preload
-  var (stored_seqno, public_key, domains) = load_data();
+  ;; var (stored_seqno, public_key, domains) = load_data();
+  var domains = get_data().begin_parse().skip_bits(32 + 256).preload_dict();
+  var (res_len, res_cell) = (0, null());
 
-  ;; ;; try subdomains
-  ;;do {
-      var dname_req_copy = dname_req;
-      var dname = rpad(dname_req_copy);
+  if (dname_req.slice_empty?()) {
+    return (res_len, res_cell);
+  }
 
-      var (records_cell, found) = domains.dict_get_ref?(slice_bits(dname), dname);
-      ifnot (found) {
-        return (0, null());
-      }
-
+  do {
+    var dname = rpad(dname_req);
+    var (records_cell, found) = domains.dict_get_ref?(slice_bits(dname), dname);
+    if (found) {
       var rs = records_cell.begin_parse();
       var records = rs~load_dict();
       rs.end_parse();
 
-      var (rec_slice, cat_found) = records.idict_get?(16, cat_id);
-      if (cat_found) {
-        var wc = rec_slice~load_int(8);
-        var addr = rec_slice~load_uint(256);
-        return (slice_bits(dname_req), begin_cell()
-          .store_int(wc, 8)
-          .store_uint(addr, 256)
-          .end_cell());
+      if (cat_id != 0) {
+        var (rec_slice, cat_found) = records.idict_get?(16, cat_id);
+        if (cat_found) {
+          var wc = rec_slice~load_int(8);
+          var addr = rec_slice~load_uint(256);
+          (res_len, res_cell) = (slice_bits(dname_req), begin_cell()
+            .store_int(wc, 8)
+            .store_uint(addr, 256)
+            .end_cell());
+        }
+      } else {
+        (res_len, res_cell) = (slice_bits(dname_req), records_cell);
       }
-      ;; while ( (~ dname_req.slice_empty?()) & (dname_req~load_uint(8) != 0) ) { }
-  ;; } until (~ dname_req.slice_empty?());
+    }
 
-  return (0, null());
+    var curr_byte = -1;
+    do {
+      curr_byte = dname_req~load_uint(8);
+    } until ((curr_byte == 46) | dname_req.slice_empty?() | (res_len != 0));
+
+  } until (dname_req.slice_empty?() | (res_len != 0));
+
+  return (res_len, res_cell);
 }
 
 int seqno() method_id {
