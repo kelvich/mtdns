@@ -10,6 +10,9 @@ cell dict_set_ref(cell dict, int key_len, slice key, cell value) asm(value key d
 (cell, int) dict_get_ref?(cell dict, int key_len, slice key) asm(key dict key_len) "DICTGETREF" "NULLSWAPIFNOT";
 (cell, int) dict_delete?(cell dict, int key_len, slice key) asm(key dict key_len) "DICTDEL";
 (cell, (int)) ~dict_delete?(cell dict, int key_len, slice key) asm(key dict key_len) "DICTDEL";
+
+(int, slice, int) idict_min?(cell dict, int key_len) asm(-> 1 0 2) "DICTIMIN" "NULLSWAPIFNOT" "NULLSWAPIFNOT";
+
 builder store_zeroes(builder b, int len) asm "STZEROES";
 cell null() asm "PUSHNULL";
 
@@ -135,6 +138,7 @@ _ ~process_domain_delete(domains, msg) impure {
     return (res_len, res_cell);
   }
 
+  ;; loop over higher-level domains (e.g. "a.b.c", "b.c", "c" )
   do {
     var dname = rpad(dname_req);
     var (records_cell, found) = domains.dict_get_ref?(slice_bits(dname), dname);
@@ -144,6 +148,14 @@ _ ~process_domain_delete(domains, msg) impure {
       rs.end_parse();
 
       if (cat_id != 0) {
+        var (min_cat, rec_slice, min_found) = records.idict_min?(16);
+
+        if (min_found) {
+          if (min_cat == -1) {
+            cat_id = -1;
+          }
+        }
+
         var (rec_slice, cat_found) = records.idict_get?(16, cat_id);
         if (cat_found) {
           var wc = rec_slice~load_int(8);
@@ -153,6 +165,7 @@ _ ~process_domain_delete(domains, msg) impure {
             .store_uint(addr, 256)
             .end_cell());
         }
+
       } else {
         (res_len, res_cell) = (slice_bits(dname_req), records_cell);
       }

@@ -9,7 +9,8 @@ init_test
 "stas"   1 124 gen-test-addr domain_upsert 0 assert_eq
 "zevlg"  1 125 gen-test-addr domain_upsert 0 assert_eq
 "yandex" 2 126 gen-test-addr domain_upsert 0 assert_eq
-"faraway" -1 127 gen-test-addr domain_upsert 0 assert_eq
+"faraway" -1 999 gen-test-addr domain_upsert 0 assert_eq
+"faraway" 1 900 gen-test-addr domain_upsert 0 assert_eq
 "" 2 303 gen-test-addr domain_upsert 35 assert_eq drop dec-mtdns-seqno
 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" 2 543 gen-test-addr domain_upsert 0 assert_eq
 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX" 3 543 gen-test-addr domain_upsert 35 assert_eq drop dec-mtdns-seqno
@@ -34,6 +35,12 @@ init_test
 
 // all records for a given domain
 "yandex" get_dnsresolve_all 0 assert_eq 48 assert_eq
+
+// -1 shadows all categories
+"faraway" 1 get_dnsresolve 0 assert_eq 999 gen-test-addr assert_eq2 56 assert_eq
+"faraway" 2 get_dnsresolve 0 assert_eq 999 gen-test-addr assert_eq2 56 assert_eq
+"db.faraway" 3 get_dnsresolve 0 assert_eq 999 gen-test-addr assert_eq2 56 assert_eq
+"mx.attic.faraway" 4 get_dnsresolve 0 assert_eq 999 gen-test-addr assert_eq2 56 assert_eq
 
 // update
 
@@ -99,9 +106,11 @@ dec-mtdns-seqno
 "telega" 1 400 gen-test-addr domain_upsert 33 assert_eq drop
 "telega" 1 400 gen-test-addr domain_upsert 0 assert_eq
 
-// -1 handling
+."DONE" cr
+
 // long domains (hash)
 // nulls! (utf)
+
 // emoji
 // unify and list errcodes
 // long opcodes?
