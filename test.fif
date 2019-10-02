@@ -1,3 +1,5 @@
+#!/usr/bin/env fift -s
+
 "common.fif" include
 
 init_test
@@ -130,11 +132,6 @@ dec-mtdns-seqno
 "telega" 1 400 gen-test-addr domain_upsert 0 assert_eq
 
 ."DONE" cr
-
-
-
-
-// long domains (hash)
 
 
 // unify and list errcodes

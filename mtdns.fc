@@ -110,12 +110,13 @@ _ ~process_domain_delete(domains, msg) impure {
 
 () recv_external(slice in_msg) impure {
   var signature = in_msg~load_bits(512);
-  var msg_slice = in_msg;
+  var msg_start = in_msg~load_ref().begin_parse();
+  var msg_slice = msg_start;
   var (msg_seqno, op) = (msg_slice~load_uint(32), msg_slice~load_uint(32));
   var (stored_seqno, public_key, domains) = load_data();
 
   throw_unless(33, msg_seqno == stored_seqno);
-  throw_unless(34, check_signature(slice_hash(in_msg), signature, public_key));
+  throw_unless(34, check_signature(slice_hash(msg_start), signature, public_key));
 
   if (op == 0x0) {
     ;; process_init();
