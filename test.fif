@@ -32,7 +32,8 @@ init_test
 "..." 1 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
 "." 1 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
 
-// "yandex" 2 get_dnsresolve_all
+// all records for a given domain
+"yandex" get_dnsresolve_all 0 assert_eq 48 assert_eq
 
 // update
 
@@ -98,7 +99,10 @@ dec-mtdns-seqno
 "telega" 1 400 gen-test-addr domain_upsert 33 assert_eq drop
 "telega" 1 400 gen-test-addr domain_upsert 0 assert_eq
 
-// all records
+// -1 handling
+// long domains (hash)
+// nulls! (utf)
+// emoji
 // unify and list errcodes
 // long opcodes?
 // var -> type

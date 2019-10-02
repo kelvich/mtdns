@@ -128,8 +128,6 @@ _ ~process_domain_delete(domains, msg) impure {
 ;; Get methods
 
 (int, cell) dnsresolve(int cat_id, slice dname_req) method_id {
-  ;; XXX skip/preload
-  ;; var (stored_seqno, public_key, domains) = load_data();
   var domains = get_data().begin_parse().skip_bits(32 + 256).preload_dict();
   var (res_len, res_cell) = (0, null());
 

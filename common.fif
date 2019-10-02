@@ -101,6 +101,21 @@ variable curr_data
     .s
 } : get_dnsresolve
 
+// ( dname -- len retcode )
+{
+    0 swap
+    ."get_dnsresolve_all: " .s
+    <b swap $, b> <s
+    "dnsresolve" method_id
+    run_method
+    .s
+    swap
+    <s ref@+ swap drop
+    16 { swap . ."-> " 8 i@+ 256 u@+ s> swap . . cr true } dictforeach 
+    drop
+} : get_dnsresolve_all
+
+
 // ( -- (v1, v2, v3) retcode )
 {
     ."get_version: " .s ." -> "
