@@ -16,13 +16,19 @@ cell dict_set_ref(cell dict, int key_len, slice key, cell value) asm(value key d
 builder store_zeroes(builder b, int len) asm "STZEROES";
 cell null() asm "PUSHNULL";
 
-;; helpers
-
-;; workaround for variable keylen dict problems
-slice rpad(slice str) {
+;; Dict accepts only fixed-lens keys, so we can pad string until
+;; fixed size limit or calculate hash. In different situations
+;; one option may be better than another (do we want to use long
+;; domain names? do we want to disclose all stored domains?).
+;; Using hash by default.
+slice align_str(slice str) {
+  ;; return begin_cell()
+  ;;   .store_slice(str)
+  ;;   .store_zeroes( 126 * 8 - slice_bits(str) )
+  ;;   .end_cell()
+  ;;   .begin_parse();
   return begin_cell()
-    .store_slice(str)
-    .store_zeroes( 32 * 8 - slice_bits(str) )
+    .store_uint(string_hash(str), 256)
     .end_cell()
     .begin_parse();
 }
@@ -56,10 +62,11 @@ _ ~process_domain_upsert(domains, msg) impure {
   var dname_len = slice_bits(dname);
   msg.end_parse();
 
-  throw_unless(35, (dname_len > 0) & (dname_len <= 32 * 8));
+  throw_unless(35, (dname_len > 0) & (dname_len <= 126 * 8));
   throw_unless(35, dname_len % 8 == 0);
+  throw_unless(36, cat_id >= -1);
 
-  dname = rpad(dname);
+  dname = align_str(dname);
 
   var (records_cell, found) = domains.dict_get_ref?(slice_bits(dname), dname);
   if (found) {
@@ -81,7 +88,7 @@ _ ~process_domain_upsert(domains, msg) impure {
 }
 
 _ ~process_domain_delete(domains, msg) impure {
-  var (cat_id, dname) = (msg~load_int(16), rpad(msg));
+  var (cat_id, dname) = (msg~load_int(16), align_str(msg));
 
   if (cat_id == 0) {
     var found = domains~dict_delete?(slice_bits(dname), dname);
@@ -132,15 +139,16 @@ _ ~process_domain_delete(domains, msg) impure {
 
 (int, cell) dnsresolve(int cat_id, slice dname_req) method_id {
   var domains = get_data().begin_parse().skip_bits(32 + 256).preload_dict();
+  var dname_len = slice_bits(dname_req);
   var (res_len, res_cell) = (0, null());
 
-  if (dname_req.slice_empty?()) {
-    return (res_len, res_cell);
-  }
+  throw_unless(35, (dname_len > 0) & (dname_len <= 126 * 8));
+  throw_unless(35, dname_len % 8 == 0);
+  throw_unless(36, cat_id >= -1);
 
   ;; loop over higher-level domains (e.g. "a.b.c", "b.c", "c" )
   do {
-    var dname = rpad(dname_req);
+    var dname = align_str(dname_req);
     var (records_cell, found) = domains.dict_get_ref?(slice_bits(dname), dname);
     if (found) {
       var rs = records_cell.begin_parse();

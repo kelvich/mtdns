@@ -121,6 +121,14 @@ variable curr_data
     .s
 } : get_dnsresolve_slice
 
+{
+    ."get_dnsresolve: " .s ." -> "
+    <b rot s, b> <s
+    "dnsresolve" method_id
+    run_method
+    .s
+} : get_dnsresolve_slice_noparse
+
 // ( dname -- len retcode )
 {
     0 swap

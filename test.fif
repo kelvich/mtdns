@@ -12,8 +12,6 @@ init_test
 "faraway" -1 999 gen-test-addr domain_upsert 0 assert_eq
 "faraway" 1 900 gen-test-addr domain_upsert 0 assert_eq
 "" 2 303 gen-test-addr domain_upsert 35 assert_eq drop dec-mtdns-seqno
-"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" 2 543 gen-test-addr domain_upsert 0 assert_eq
-"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX" 3 543 gen-test-addr domain_upsert 35 assert_eq drop dec-mtdns-seqno
 
 <b "db1" $, 0 8 u, "msk" $, 0 8 u, "yandex" $, b> <s 1 400 gen-test-addr
     domain_upsert_slice 0 assert_eq
@@ -21,6 +19,10 @@ init_test
     domain_upsert_slice 0 assert_eq
 <b "🦆" $, 0 8 u, "farm" $, b> <s 1 700 gen-test-addr
     domain_upsert_slice 0 assert_eq
+<b "" { "x" $+ } 126 times $, b> <s 1 800 gen-test-addr
+    domain_upsert_slice 0 assert_eq
+<b "" { "x" $+ } 127 times $, b> <s 1 900 gen-test-addr
+    domain_upsert_slice 35 assert_eq drop dec-mtdns-seqno
 
 // resolve domains
 
@@ -29,7 +31,7 @@ init_test
 "stas" 1 get_dnsresolve 0 assert_eq 124 gen-test-addr assert_eq2 32 assert_eq
 "zevlg" 1 get_dnsresolve 0 assert_eq 125 gen-test-addr assert_eq2 40 assert_eq
 "телеграм" 1 get_dnsresolve  0 assert_eq 100 gen-test-addr assert_eq2 128 assert_eq
-"" 2 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
+// "" 2 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
 
 <b "db1" $, 0x0 8 u, "msk" $, 0x0 8 u, "yandex" $, b> <s 1
     get_dnsresolve_slice 0 assert_eq 400 gen-test-addr assert_eq2 112 assert_eq
@@ -41,6 +43,12 @@ init_test
     get_dnsresolve_slice 0 assert_eq 700 gen-test-addr assert_eq2 72 assert_eq
 <b "🐷" $, 0 8 u, "farm" $, b> <s 1
     get_dnsresolve_slice 0 assert_eq assert_null 0 assert_eq
+<b "" { "x" $+ } 127 times $, b> <s 1
+    get_dnsresolve_slice_noparse 35 assert_eq drop
+<b "" $, b> <s 1
+    get_dnsresolve_slice_noparse 35 assert_eq drop
+<b "xxx" $, b> <s -2
+    get_dnsresolve_slice_noparse 36 assert_eq drop
 
 "..." 1 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
 "." 1 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
@@ -110,7 +118,7 @@ get_version 0 assert_eq triple third 1 assert_eq
 
 get_seqno 0 assert_eq drop
 
-// unknown op
+// unknown op exception
 
 mtdns_unknown_op 50 assert_eq drop dec-mtdns-seqno
 
