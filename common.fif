@@ -59,6 +59,16 @@ variable curr_data
     .s
 } : domain_upsert
 
+// ( dname cat_id wc addr -- retcode )
+{
+    ."domain_upsert: " .s ." -> "
+    rot // dname wc addr cat_id
+    3 roll <b swap s, b> 3 -roll
+    <b get-mtdns-seqno 32 u, 0x2 32 u, swap 16 i, -rot addr, swap ref, b> // msg
+    send_ext_msg
+    .s
+} : domain_upsert_slice
+
 // ( dname cat_id -- retcode )
 {
     ."domain_delete: " .s ." -> "
@@ -100,6 +110,16 @@ variable curr_data
     swap dup null? { <s 8 i@+ 256 u@+ s> } ifnot rot
     .s
 } : get_dnsresolve
+
+// ( dname cat_id -- len rec_value retcode )
+{
+    ."get_dnsresolve: " .s ." -> "
+    <b rot s, b> <s
+    "dnsresolve" method_id
+    run_method
+    swap dup null? { <s 8 i@+ 256 u@+ s> } ifnot rot
+    .s
+} : get_dnsresolve_slice
 
 // ( dname -- len retcode )
 {

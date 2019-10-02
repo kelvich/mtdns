@@ -14,8 +14,13 @@ init_test
 "" 2 303 gen-test-addr domain_upsert 35 assert_eq drop dec-mtdns-seqno
 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" 2 543 gen-test-addr domain_upsert 0 assert_eq
 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX" 3 543 gen-test-addr domain_upsert 35 assert_eq drop dec-mtdns-seqno
-"db1.msk.yandex" 1 400 gen-test-addr domain_upsert 0 assert_eq
-"khv.yandex" 1 401 gen-test-addr domain_upsert 0 assert_eq
+
+<b "db1" $, 0 8 u, "msk" $, 0 8 u, "yandex" $, b> <s 1 400 gen-test-addr
+    domain_upsert_slice 0 assert_eq
+<b "khv" $, 0 8 u, "yandex" $, b> <s 1 401 gen-test-addr
+    domain_upsert_slice 0 assert_eq
+<b "🦆" $, 0 8 u, "farm" $, b> <s 1 700 gen-test-addr
+    domain_upsert_slice 0 assert_eq
 
 // resolve domains
 
@@ -26,9 +31,16 @@ init_test
 "телеграм" 1 get_dnsresolve  0 assert_eq 100 gen-test-addr assert_eq2 128 assert_eq
 "" 2 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
 
-"db1.msk.yandex" 1 get_dnsresolve 0 assert_eq 400 gen-test-addr assert_eq2 112 assert_eq
-"db2.msk.yandex" 3 get_dnsresolve 0 assert_eq 123 gen-test-addr assert_eq2 48 assert_eq
-"db2.khv.yandex" 1 get_dnsresolve 0 assert_eq 401 gen-test-addr assert_eq2 80 assert_eq
+<b "db1" $, 0x0 8 u, "msk" $, 0x0 8 u, "yandex" $, b> <s 1
+    get_dnsresolve_slice 0 assert_eq 400 gen-test-addr assert_eq2 112 assert_eq
+<b "db2" $, 0x0 8 u, "msk" $, 0x0 8 u, "yandex" $, b> <s 3
+    get_dnsresolve_slice 0 assert_eq 123 gen-test-addr assert_eq2 48 assert_eq
+<b "db2" $, 0x0 8 u, "khv" $, 0x0 8 u, "yandex" $, b> <s 1
+    get_dnsresolve_slice 0 assert_eq 401 gen-test-addr assert_eq2 80 assert_eq
+<b "🦆" $, 0 8 u, "farm" $, b> <s 1
+    get_dnsresolve_slice 0 assert_eq 700 gen-test-addr assert_eq2 72 assert_eq
+<b "🐷" $, 0 8 u, "farm" $, b> <s 1
+    get_dnsresolve_slice 0 assert_eq assert_null 0 assert_eq
 
 "..." 1 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
 "." 1 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
@@ -39,8 +51,11 @@ init_test
 // -1 shadows all categories
 "faraway" 1 get_dnsresolve 0 assert_eq 999 gen-test-addr assert_eq2 56 assert_eq
 "faraway" 2 get_dnsresolve 0 assert_eq 999 gen-test-addr assert_eq2 56 assert_eq
-"db.faraway" 3 get_dnsresolve 0 assert_eq 999 gen-test-addr assert_eq2 56 assert_eq
-"mx.attic.faraway" 4 get_dnsresolve 0 assert_eq 999 gen-test-addr assert_eq2 56 assert_eq
+
+<b "db" $, 0x0 8 u, "faraway" $, b> <s 3
+    get_dnsresolve_slice 0 assert_eq 999 gen-test-addr assert_eq2 56 assert_eq
+<b "mx" $, 0x0 8 u, "attic" $, 0x0 8 u, "faraway" $, b> <s 4
+    get_dnsresolve_slice 0 assert_eq 999 gen-test-addr assert_eq2 56 assert_eq
 
 // update
 
@@ -108,10 +123,12 @@ dec-mtdns-seqno
 
 ."DONE" cr
 
-// long domains (hash)
-// nulls! (utf)
 
-// emoji
+
+
+// long domains (hash)
+
+
 // unify and list errcodes
 // long opcodes?
 // var -> type

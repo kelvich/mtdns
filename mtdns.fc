@@ -172,7 +172,7 @@ _ ~process_domain_delete(domains, msg) impure {
     var curr_byte = -1;
     do {
       curr_byte = dname_req~load_uint(8);
-    } until ((curr_byte == 46) | dname_req.slice_empty?() | (res_len != 0));
+    } until ((curr_byte == 0) | dname_req.slice_empty?() | (res_len != 0));
 
   } until (dname_req.slice_empty?() | (res_len != 0));
 
