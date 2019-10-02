@@ -148,16 +148,14 @@ _ ~process_domain_delete(domains, msg) impure {
       rs.end_parse();
 
       if (cat_id != 0) {
-        var (min_cat, rec_slice, min_found) = records.idict_min?(16);
+        var (min_cat, rec_slice, rec_found) = records.idict_min?(16);
 
-        if (min_found) {
-          if (min_cat == -1) {
-            cat_id = -1;
-          }
+        if (min_cat.null?()) { min_cat = 0; }
+        ifnot (rec_found & (min_cat == -1)) {
+          (rec_slice, rec_found) = records.idict_get?(16, cat_id);
         }
 
-        var (rec_slice, cat_found) = records.idict_get?(16, cat_id);
-        if (cat_found) {
+        if (rec_found) {
           var wc = rec_slice~load_int(8);
           var addr = rec_slice~load_uint(256);
           (res_len, res_cell) = (slice_bits(dname_req), begin_cell()
