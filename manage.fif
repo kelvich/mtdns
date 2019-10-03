@@ -49,7 +49,6 @@ $2 "show" $=
     quit
 } if
 
-// XXX: use @'?
 $2 "init" $=
 {
     $3 parse-workchain-id wc !

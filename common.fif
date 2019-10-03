@@ -31,9 +31,9 @@ variable curr_data
 // ( -- )
 {
     mtdns-seqno 0!
-    "test.pk" load-generate-keypair
-    mtdns-privkey !
+    newkeypair
     mtdns-pubkey !
+    mtdns-privkey !
 
     <b 0 32 u,
        mtdns-pubkey @ B,

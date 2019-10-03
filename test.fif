@@ -99,7 +99,7 @@ init_test
 
 variable new-pubkey
 variable new-privkey
-"test_transfer" load-generate-keypair new-privkey ! new-pubkey !
+newkeypair new-pubkey ! new-privkey !
 new-pubkey @ mtdns_transfer 0 assert_eq
 // should work
 "телеграм" 1 get_dnsresolve 0 assert_eq 100 gen-test-addr assert_eq2 128 assert_eq
@@ -137,6 +137,9 @@ dec-mtdns-seqno
 // unify and list errcodes
 // long opcodes?
 // var -> type
+// use @' in manage
+// 32 bit workchains
+// ldaddr again?
 
 // gen key without file
 // readme
