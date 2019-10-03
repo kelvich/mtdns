@@ -86,7 +86,14 @@ _ ~process_domain_upsert(domains, msg) impure {
 }
 
 _ ~process_domain_delete(domains, msg) impure {
-  var (cat_id, dname) = (msg~load_int(16), align_str(msg));
+  var cat_id = msg~load_int(16);
+  var dname = align_str(msg~load_ref().begin_parse());
+  var dname_len = slice_bits(dname);
+  msg.end_parse();
+
+  throw_unless(35, (dname_len > 0) & (dname_len <= 126 * 8));
+  throw_unless(35, dname_len % 8 == 0);
+  throw_unless(36, cat_id >= -1);
 
   if (cat_id == 0) {
     var found = domains~dict_delete?(slice_bits(dname), dname);

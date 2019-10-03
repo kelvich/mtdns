@@ -72,7 +72,8 @@ variable curr_data
 // ( dname cat_id -- retcode )
 {
     ."domain_delete: " .s ." -> "
-    <b get-mtdns-seqno 32 u, 0x3 32 u, swap 16 i, swap $, b> // msg
+    swap <b swap $, b> swap
+    <b get-mtdns-seqno 32 u, 0x3 32 u, swap 16 i, swap ref, b> // msg
     send_ext_msg
     .s
 } : domain_delete
