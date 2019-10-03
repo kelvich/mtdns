@@ -2,15 +2,9 @@
 "TonUtil.fif" include
 "Asm.fif" include
 
-variable mtdns-pubkey
-variable mtdns-privkey
-variable wc
-variable addr
-variable file-base
-
 { ."Manual TON DNS management script." cr cr
   ."usage: " $0 type ." <filename-base> action arg1 arg2 ... argN" cr
-  ."  init <workchain-id>" cr
+  ."  touch <workchain-id>: create new or show existing install" cr
   ."  set <domain> <seqno> <category_id> <address>" cr
   ."  upgrade <seqno>" cr
   ."  tranasfer <seqno> <new-public-key>" cr
@@ -19,18 +13,18 @@ variable file-base
 
 // (msg -- Msg)
 {
-    dup hashu mtdns-privkey @ ed25519_sign_uint // msg sig
-    <b b{1000100} s, wc @ addr @ addr, 0 Gram, b{00} s, swap B, swap ref, b>
-    2 boc+>B file-base @ +"-query.boc" tuck B>file
+    dup hashu @' mtdns-privkey ed25519_sign_uint // msg sig
+    <b b{1000100} s, @' addr addr, 0 Gram, b{00} s, swap B, swap ref, b>
+    2 boc+>B "deployments/last-query.boc" tuck B>file
     ."Saved query to file " type cr
 } : create_ext_msg
 
 // (StateInit msg -- InitMsg)
 {
-    dup hashu mtdns-privkey @ ed25519_sign_uint // StateInit msg sig
+    dup hashu @' mtdns-privkey ed25519_sign_uint // StateInit msg sig
     rot // msg sig StateInit
-    <b b{1000100} s, wc @ addr @ addr, b{000010} s, swap <s s, b{0} s, swap B, swap ref, b>
-    2 boc+>B file-base @ +"-query.boc" tuck B>file
+    <b b{1000100} s, @' addr addr, b{000010} s, swap <s s, b{0} s, swap B, swap ref, b>
+    2 boc+>B "deployments/last-query.boc" tuck B>file
     ."Saved query to file " type cr
 } : create_init_msg
 
@@ -41,30 +35,31 @@ variable file-base
     ."Bounceable address (for later access): " 6 .Addr cr
 } : print_addr
 
-"deployments/" $1 $+ file-base !
+"deployments/" $1 $+ =: file-base
 
 $2 "show" $=
 {
-    file-base @ +".addr" load-address print_addr
+    @' file-base +".addr" load-address print_addr
     quit
 } if
 
-$2 "init" $=
+$2 "touch" $=
 {
-    $3 parse-workchain-id wc !
-    ."Initialising dns contract '" file-base @ type ."' in workchain " wc @ . cr
+    $3 parse-workchain-id =: wc
 
-    file-base @ +".pk" load-generate-keypair mtdns-privkey ! mtdns-pubkey !
+    ."Initialising dns contract '" @' file-base type ."' in workchain " @' wc . cr
+
+    @' file-base +".pk" load-generate-keypair =: mtdns-privkey =: mtdns-pubkey
 
     // create StateInit
     "mtdns.fif" include
-    <b 0 32 u, mtdns-pubkey @ B, null dict, b>
+    <b 0 32 u, @' mtdns-pubkey B, null dict, b>
     null
     <b b{0011} s, 3 roll ref, rot ref, swap dict, b>  // StateInit
 
     // calculate and save addres
-    dup hashu addr !
-    wc @ addr @ 2dup file-base @ +".addr" save-address print_addr
+    dup hashu @' wc swap 2=: addr
+    @' addr 2dup @' file-base +".addr"  save-address print_addr
 
     <b 0 32 u, 0x0 32 u, b> // StateInit InitMsg
     create_init_msg
@@ -80,10 +75,10 @@ $2 "set" $=
     $5 parse-int =: category_id
     $6 true parse-load-address drop 2=: dest_addr
 
-    file-base @ +".addr" load-address .s addr ! wc !
-    file-base @ +".pk" load-keypair mtdns-privkey ! mtdns-pubkey !
+    @' file-base +".addr" load-address 2=: addr
+    @' file-base +".pk" load-keypair  =: mtdns-privkey =: mtdns-pubkey
 
-    @' domain <b swap $, b>
+    @' domain <b swap $, b> // domain name in separete cell
     <b @' seqno 32 u, 0x2 32 u, @' category_id 16 i, @' dest_addr addr, swap ref, b> // msg
     create_ext_msg
 
