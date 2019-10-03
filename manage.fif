@@ -12,6 +12,8 @@
   1 halt
 } : usage
 
+$# 3 < { usage } if
+
 // (msg -- Msg)
 {
     dup hashu @' mtdns-privkey ed25519_sign_uint // msg sig
