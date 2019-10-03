@@ -57,7 +57,6 @@ _ ~process_domain_upsert(domains, msg) impure {
   var cat_id = msg~load_int(16);
   var wc = msg~load_int(8);
   var addr = msg~load_uint(256);
-
   var dname = msg~load_ref().begin_parse();
   var dname_len = slice_bits(dname);
   msg.end_parse();
@@ -79,7 +78,6 @@ _ ~process_domain_upsert(domains, msg) impure {
     .store_int(wc, 8)
     .store_uint(addr, 256));
 
-  ;; should we do that for existing key?
   domains~dict_set_ref(slice_bits(dname), dname, begin_cell()
     .store_dict(records)
     .end_cell());
@@ -147,7 +145,12 @@ _ ~process_domain_delete(domains, msg) impure {
   throw_unless(35, dname_len % 8 == 0);
   throw_unless(36, cat_id >= -1);
 
-  ;; loop over higher-level domains (e.g. "a.b.c", "b.c", "c" )
+  ;; Loop over higher-level domains (e.g. "a.b.c", "b.c", "c" ).
+  ;;
+  ;; Coding in following loops is quite weird and suboptimal due to
+  ;; func compiler producing wrong code in case of return statements inside
+  ;; nested contitionals. Also while loops also were broken -- need more
+  ;; investigation.
   do {
     var dname = align_str(dname_req);
     var (records_cell, found) = domains.dict_get_ref?(slice_bits(dname), dname);
@@ -159,6 +162,7 @@ _ ~process_domain_delete(domains, msg) impure {
       if (cat_id != 0) {
         var (min_cat, rec_slice, rec_found) = records.idict_min?(16);
 
+        ;; -1 has higher priority
         if (min_cat.null?()) { min_cat = 0; }
         ifnot (rec_found & (min_cat == -1)) {
           (rec_slice, rec_found) = records.idict_get?(16, cat_id);
@@ -172,7 +176,6 @@ _ ~process_domain_delete(domains, msg) impure {
             .store_uint(addr, 256)
             .end_cell());
         }
-
       } else {
         (res_len, res_cell) = (slice_bits(dname_req), records_cell);
       }
