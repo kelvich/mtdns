@@ -36,6 +36,11 @@
     ."Bounceable address (for later access): " 6 .Addr cr
 } : print_addr
 
+{
+    @' file-base +".addr" load-address 2=: addr
+    @' file-base +".pk" load-keypair  =: mtdns-privkey =: mtdns-pubkey
+} : load_account
+
 "deployments/" $1 $+ =: file-base
 
 $2 "show" $=
@@ -53,7 +58,7 @@ $2 "touch" $=
     @' file-base +".pk" load-generate-keypair =: mtdns-privkey =: mtdns-pubkey
 
     // create StateInit
-    "mtdns.fif" include
+    // "mtdns.fif" include
     <b 0 32 u, @' mtdns-pubkey B, null dict, b>
     null
     <b b{0011} s, 3 roll ref, rot ref, swap dict, b>  // StateInit
@@ -72,12 +77,11 @@ $2 "upsert" $=
 {
     // <domain> <seqno> <category_id> <address>
     $3 =: domain
-    $4 parse-int =: seqno
-    $5 parse-int =: category_id
-    $6 true parse-load-address drop 2=: dest_addr
+    def? $4 { @' $4 } if parse-int =: seqno
+    def? $5 { @' $5 } if parse-int =: category_id
+    def? $6 { @' $6 } if true parse-load-address drop 2=: dest_addr
 
-    @' file-base +".addr" load-address 2=: addr
-    @' file-base +".pk" load-keypair  =: mtdns-privkey =: mtdns-pubkey
+    load_account
 
     @' domain <b swap $, b> // domain name in separete cell
     <b @' seqno 32 u, 0x2 32 u, @' category_id 16 i, @' dest_addr addr, swap ref, b> // msg
@@ -86,16 +90,49 @@ $2 "upsert" $=
     quit
 } if
 
-// delete
-
-$1 "upgrade" $=
+$2 "delete" $=
 {
-    ."init!" cr
+    // <domain> <seqno> <cat_id>
+    $3 =: domain
+    def? $4 { @' $4 } if parse-int =: seqno
+    def? $5 { @' $5 } if parse-int =: category_id
+
+    load_account
+
+    @' domain <b swap $, b> // domain name in separete cell
+    <b @' seqno 32 u, 0x3 32 u, @' category_id 16 i, swap ref, b> // msg
+    create_ext_msg
+
+    quit
 } if
 
-$1 "transfer" $=
+$2 "upgrade" $=
 {
-    ."init!" cr
+    // <seqno>
+    $3 parse-int =: mtdns-seqno
+
+    load_account
+
+    "mtdns.fif" include
+    <b @' mtdns-seqno 32 u, 0x11 32 u, swap ref, b> // msg
+    create_ext_msg
+
+    quit
+} if
+
+$2 "transfer" $=
+{
+    // <seqno> <pubkey>
+    $3 parse-int =: seqno
+    def? $4 { @' $4 } if parse-int =: new_pubkey
+
+    load_account
+
+    @' 256 new_pubkey u>B
+    <b @' seqno 32 u, 0x10 32 u, swap B, b> // msg
+    send_ext_msg
+
+    quit
 } if
 
 usage
