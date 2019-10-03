@@ -3,11 +3,12 @@
 "Asm.fif" include
 
 { ."Manual TON DNS management script." cr cr
-  ."usage: " $0 type ." <filename-base> action arg1 arg2 ... argN" cr
+  ."usage: " $0 type ." <contract-name> action arg1 arg2 ... argN" cr
   ."  touch <workchain-id>: create new or show existing install" cr
-  ."  set <domain> <seqno> <category_id> <address>" cr
+  ."  upsert <domain> <seqno> <category_id> <address>" cr
+  ."  delete <domain> <seqno> <category_id> <address>" cr
   ."  upgrade <seqno>" cr
-  ."  tranasfer <seqno> <new-public-key>" cr
+  ."  transfer <seqno> <new-public-key>" cr
   1 halt
 } : usage
 
@@ -67,7 +68,7 @@ $2 "touch" $=
     quit
 } if
 
-$2 "set" $=
+$2 "upsert" $=
 {
     // <domain> <seqno> <category_id> <address>
     $3 =: domain
@@ -84,6 +85,8 @@ $2 "set" $=
 
     quit
 } if
+
+// delete
 
 $1 "upgrade" $=
 {

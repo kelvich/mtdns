@@ -1,5 +1,10 @@
 #!/usr/bin/env fift -s
 
+//
+// Following tests assume that https://github.com/ton-blockchain/ton/pull/60
+// is applied.
+//
+
 "common.fif" include
 
 init_test
@@ -132,13 +137,10 @@ dec-mtdns-seqno
 
 ."DONE" cr
 
+// full manage
+// Makefile
 
-// unify and list errcodes
-// long opcodes?
-// var -> type
-// use @' in manage
 // 32 bit workchains
 // ldaddr again?
-
-// gen key without file
-// readme
+// long opcodes?
+// var -> type
