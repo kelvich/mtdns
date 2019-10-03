@@ -33,7 +33,6 @@ init_test
 "stas" 1 get_dnsresolve 0 assert_eq 124 gen-test-addr assert_eq2 32 assert_eq
 "zevlg" 1 get_dnsresolve 0 assert_eq 125 gen-test-addr assert_eq2 40 assert_eq
 "телеграм" 1 get_dnsresolve  0 assert_eq 100 gen-test-addr assert_eq2 128 assert_eq
-// "" 2 get_dnsresolve 0 assert_eq assert_null 0 assert_eq
 
 <b "db1" $, 0x0 8 u, "msk" $, 0x0 8 u, "yandex" $, b> <s 1
     get_dnsresolve_slice 0 assert_eq 400 gen-test-addr assert_eq2 112 assert_eq
