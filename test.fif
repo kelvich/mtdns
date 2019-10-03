@@ -137,3 +137,6 @@ dec-mtdns-seqno
 // unify and list errcodes
 // long opcodes?
 // var -> type
+
+// gen key without file
+// readme
