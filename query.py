@@ -29,6 +29,11 @@ elif sys.argv[1] == "seqno":
     run_client("last")
     run_client("runmethod %s seqno" % addr)
 
+elif sys.argv[1] == "version":
+    addr = to_addr(sys.argv[2])
+    run_client("last")
+    run_client("runmethod %s version" % addr)
+
 elif sys.argv[1] == "dnsresolve":
     addr = to_addr(sys.argv[2])
     domain = sys.argv[3]

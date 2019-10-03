@@ -38,7 +38,7 @@
 
 {
     @' file-base +".addr" load-address 2=: addr
-    @' file-base +".pk" load-keypair  =: mtdns-privkey =: mtdns-pubkey
+    @' file-base +".pk" load-keypair =: mtdns-privkey =: mtdns-pubkey
 } : load_account
 
 "deployments/" $1 $+ =: file-base
@@ -124,13 +124,13 @@ $2 "transfer" $=
 {
     // <seqno> <pubkey>
     $3 parse-int =: seqno
-    def? $4 { @' $4 } if parse-int =: new_pubkey
+    def? $4 { @' $4 } if =: new_pubkey_path
 
     load_account
 
-    @' 256 new_pubkey u>B
+    @' new_pubkey_path file>B
     <b @' seqno 32 u, 0x10 32 u, swap B, b> // msg
-    send_ext_msg
+    create_ext_msg
 
     quit
 } if
